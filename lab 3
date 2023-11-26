@@ -1,0 +1,236 @@
+//lab3 q1 a
+#include <stdio.h>
+
+void shuffleRecursive(int arr[], int start, int end) {
+    if (start >= end) {
+        return;
+    }
+
+    int mid = (start + end) / 2;
+    int temp;
+
+    for (int i = start; i <= mid; i++) {    // odd varibles are moved front
+    if (arr[i] % 2 == 0) {
+    for (int j = i; j < end; j++) {
+    if (arr[j] % 2 != 0) {
+    temp = arr[i];
+    arr[i] = arr[j];
+    arr[j] = temp;
+break;
+    }
+    }
+}
+}
+    shuffleRecursive(arr, start, mid);   //both half are recursivley shuffled
+    shuffleRecursive(arr, mid + 1, end);
+}
+
+int main() {
+    int arr[] = {1, 2, 3, 4, 5, 6, 7, 8, 9};
+    int size = sizeof(arr) / sizeof(arr[0]);
+
+    shuffleRecursive(arr, 0, size - 1);
+
+    for (int i = 0; i < size; i++) {
+        printf("%d ", arr[i]);   // Printing the shuffled array
+    }
+
+    return 0;
+}
+
+//lab 3 q1 b
+#include <stdio.h>
+
+void shuffleIterative(int arr[], int size) {
+    int i = 0, j = size - 1, temp;
+
+    while (i < j) {
+        while (arr[i] % 2 != 0 && i < j) {   // odd varibles are moved front
+            i++;
+        }
+
+        while (arr[j] % 2 == 0 && i < j) {         // even varibles are moved front
+            j--;
+        }
+
+        if (i < j) {
+            temp = arr[i];  // Swaping arr[i] and arr[j]
+            arr[i] = arr[j];
+            arr[j] = temp;
+        }
+    }
+}
+
+int main() {
+    int arr[] = {1, 2, 3, 4, 5, 6, 7, 8, 9};
+    int size = sizeof(arr) / sizeof(arr[0]);
+
+    shuffleIterative(arr, size);
+
+    for (int i = 0; i < size; i++) {
+        printf("%d ", arr[i]);      // Printing the shuffled array
+    }
+
+    return 0;
+}
+
+//lab 3 Q2
+#include <stdio.h>
+#include <stdlib.h>
+
+void computeHistogram(int *inpImage, int *histogram, int size) {
+	int i ;
+    // Initialize histogram to zeros
+    for (i = 0; i <= 255; ++i) {
+        histogram[i] = 0;
+    }
+
+    // Compute histogram
+    for (i = 0; i < size; ++i) {
+        histogram[inpImage[i]]++;
+    }
+}
+
+void calculateCumulativeHist(int *histogram, int *cumulativeHist, int L) {
+	int i ; 
+    // Initialize cumulative histogram
+    cumulativeHist[0] = histogram[0];
+
+    // Calculate cumulative histogram
+    for (i = 1; i <= L; ++i) {
+        cumulativeHist[i] = cumulativeHist[i - 1] + histogram[i];
+    }
+}
+
+void performHistogramEqualization(int *inpImage, int *outImage, int *cumulativeHist, int size, int L) {
+	int i ;
+    // Perform Histogram Equalisation
+    for (i = 0; i < size; ++i) {
+        outImage[i] = ((cumulativeHist[inpImage[i]] * L) / size);
+    }
+}
+int main() {
+    int *inpImage;
+    char *magic = (char *) malloc (3 * sizeof(char));
+    int sizeX, sizeY, L;
+    int i, j;
+  
+    int ch;
+
+    FILE *tmp = fopen("output.pgm", "w");
+	FILE *tmp1 = fopen("output.txt", "w");
+	
+    FILE *imageFile = fopen("Rain_tree.pgm", "r");
+    if (imageFile == NULL) {
+        printf("rain.tree file cannot be opened");
+    }
+
+    fscanf(imageFile, "%s", magic);
+    printf("%s - ", magic);
+    if (magic[0] != 'P' || magic[1] != '2') {
+        printf("Invalid PGM format. Only P2 format is supported.\n");
+        exit(1);
+    }
+	char *buffer = (char *)malloc(256 * sizeof(char));
+    if (buffer == NULL) {
+        fprintf(stderr, "Memory allocation failed for buffer.\n");
+        exit(1);
+    }
+	
+	fscanf(imageFile, "%s", buffer);
+    printf("  copy :%s", buffer);
+
+    while (buffer[0] == '#') {
+        fgets(buffer, 255, imageFile);
+        printf("  copy : %s", buffer);
+    }
+
+    fscanf(imageFile, "%d %d %d", &sizeX, &sizeY, &L);
+    printf("%d,%d,%d", sizeX, sizeY, L);
+
+    fprintf(tmp, "P2\n"); 
+    fprintf(tmp, "# Created by your_program_name\n");  
+    fprintf(tmp, "%d %d\n", sizeX, sizeY); 
+    fprintf(tmp, "%d\n", L);
+    
+    fprintf(tmp1, "P2\n");  
+    fprintf(tmp1, "# Created by your_program_name\n"); 
+    fprintf(tmp1, "%d %d\n", sizeX, sizeY);  
+    fprintf(tmp1, "%d\n", L);
+    
+    inpImage = (int *)malloc(sizeX * sizeY * sizeof(int));
+    
+    for (i = 0; i < (sizeX * sizeY); ++i) {
+     	fscanf(imageFile, "%d", &inpImage[i]);
+        
+	}
+	
+	int *histogram = (int *)calloc(L + 1, sizeof(int));
+	int *cumulativeHist = (int *)malloc((L + 1) * sizeof(int));
+	
+	computeHistogram(inpImage, histogram, sizeX * sizeY);
+	
+	calculateCumulativeHist(histogram, cumulativeHist, L);
+	
+	 int *outImage = (int *)malloc(sizeX * sizeY * sizeof(int));
+
+    // Perform histogram equalization
+    performHistogramEqualization(inpImage, outImage, cumulativeHist, sizeX * sizeY, L);
+    
+    for (i = 0; i < (sizeX * sizeY); ++i) {
+     	fprintf(tmp, "%d ", outImage[i]);
+        fprintf(tmp1, "%d ", outImage[i]);
+	}
+	free(magic);
+	free(buffer);
+	free(inpImage);
+    free(histogram);
+    free(cumulativeHist);
+    free(outImage);
+
+    fclose(tmp);
+    fclose(tmp1);
+    fclose(imageFile);
+	
+    
+    return 0;
+}
+
+//lab 3 Q3
+#include<iostream>
+#include<iomanip>
+#include <cstdlib> 
+
+using namespace std;
+
+
+void print_real( float number, int fieldspace, int precision);
+template <typename T>  void update_scale( T& m1 , T& m2 , T m3 = 10 );
+
+int main(void){
+float  a, b;
+cout<<" Please input two real numbers";
+cin>>a>>b;	
+
+print_real(a,7,3);
+print_real(b,7,3);
+// call the function update_scale with ONLY the actual parameters a  and b
+update_scale (a , b);
+print_real(a,7,3);
+print_real(b,7,3);
+	
+}
+
+/* complete the body of the function */
+void print_real( float number, int fieldspace, int precision){
+	cout<<fixed<<setw(fieldspace)<<setprecision(precision)<<number<<endl;
+}
+
+// add the function defintion (header+body) of the template function update_scale
+template <typename T> void update_scale( T& m1 , T& m2 , T m3 = 10 ) {
+	T org_m1 = m1 ; 
+	T org_m2 = m2 ;
+	m1 = (org_m1+ org_m2 )* m3 ;
+	m2 = (org_m1 - org_m2)* m3 ; 
+	
+}
